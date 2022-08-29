@@ -24,7 +24,6 @@ import org.finos.legend.engine.plan.execution.api.result.ResultManager;
 import org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizer;
 import org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerInput;
 import org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerOutput;
-import org.finos.legend.engine.plan.execution.authorization.mac.PlanExecutionAuthorizerMACUtils;
 import org.finos.legend.engine.plan.execution.result.Result;
 import org.finos.legend.engine.plan.execution.result.serialization.SerializationFormat;
 import org.finos.legend.engine.plan.execution.stores.StoreExecutionState;
@@ -60,33 +59,52 @@ public class ExecutePlan
     private final PlanExecutor planExecutor;
     private IdentityFactory identityFactory;
     private final PlanExecutionAuthorizer planExecutionAuthorizer;
-    private final String middleTierAuthorizationMACKeyVaultReference;
 
     public ExecutePlan(PlanExecutor planExecutor)
     {
-        this(planExecutor, null, null, new DefaultIdentityFactory());
+        this(planExecutor, null, new DefaultIdentityFactory());
     }
 
-    public ExecutePlan(PlanExecutor planExecutor, PlanExecutionAuthorizer planExecutionAuthorizer, String middleTierAuthorizationMACKeyVaultReference, IdentityFactory identityFactory)
+    public ExecutePlan(PlanExecutor planExecutor, PlanExecutionAuthorizer planExecutionAuthorizer, IdentityFactory identityFactory)
     {
         this.planExecutor = planExecutor;
         this.identityFactory = identityFactory;
-        if (planExecutionAuthorizer != null && middleTierAuthorizationMACKeyVaultReference == null)
-        {
-            throw new IllegalArgumentException("Invalid arguments. Plan authorizer is not null but MAC key vault reference is null");
-        }
         this.planExecutionAuthorizer = planExecutionAuthorizer;
-        this.middleTierAuthorizationMACKeyVaultReference = middleTierAuthorizationMACKeyVaultReference;
     }
 
     public Response doExecutePlan(@Context HttpServletRequest request, ExecutionPlan execPlan, @DefaultValue(SerializationFormat.defaultFormatString) @QueryParam("serializationFormat") SerializationFormat format, @ApiParam(hidden = true) @Pac4JProfileManager ProfileManager<CommonProfile> pm)
     {
+        /*
+            planExecutionAuthorizer is used as a feature flag to gradually introduce middle tier authorization into the execution flow.
+            When configured, we switch to a code path that can handle both middle tier and push down executions.
+            When not configured, we switch to a code path that can handle only push down executions.
+         */
+        if (this.planExecutionAuthorizer == null)
+        {
+            return this.doExecutePlanLegacy(request, execPlan, format, pm);
+        }
+        else
+        {
+            return this.doExecutePlanImpl(execPlan, format, ProfileManagerHelper.extractProfiles(pm));
+        }
+    }
+
+    public Response doExecutePlanLegacy(HttpServletRequest request, ExecutionPlan execPlan, SerializationFormat format, ProfileManager<CommonProfile> pm)
+    {
         MutableList<CommonProfile> profiles = ProfileManagerHelper.extractProfiles(pm);
+
         try
         {
             if (execPlan instanceof SingleExecutionPlan)
             {
-                return doExecutePlanImpl((SingleExecutionPlan) execPlan, format, profiles);
+                LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_START, "").toString());
+                // Assume that the input exec plan has no variables
+                Result result = planExecutor.execute((SingleExecutionPlan) execPlan, Maps.mutable.empty(), null, profiles);
+                try (Scope scope = GlobalTracer.get().buildSpan("Manage Results").startActive(true))
+                {
+                    LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_STOP, "").toString());
+                    return ResultManager.manageResult(profiles, result, format, LoggingEventType.EXECUTION_PLAN_EXEC_ERROR);
+                }
             }
             else
             {
@@ -99,16 +117,29 @@ public class ExecutePlan
         }
     }
 
-    Response doExecutePlanImpl(SingleExecutionPlan execPlan, SerializationFormat format, MutableList<CommonProfile> profiles) throws Exception
+    public Response doExecutePlanImpl(ExecutionPlan execPlan, SerializationFormat format, MutableList<CommonProfile> profiles)
     {
+        if (!(execPlan instanceof SingleExecutionPlan))
+        {
+            return Response.status(500).type(MediaType.TEXT_PLAIN).entity(new ResultManager.ErrorMessage(20, "Only SingleExecutionPlan is supported")).build();
+        }
+
         long start = System.currentTimeMillis();
-        LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_START, "").toString());
-        Response response = execImpl(execPlan, profiles, format, start);
-        LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_STOP, "").toString());
-        return response;
+        try
+        {
+            LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_START, "").toString());
+            Response response = execImpl(execPlan, profiles, format, start);
+            LOGGER.info(new LogInfo(profiles, LoggingEventType.EXECUTION_PLAN_EXEC_STOP, "").toString());
+            return response;
+        }
+        catch (Exception ex)
+        {
+            MetricsHandler.observeError("execute");
+            return ExceptionTool.exceptionManager(ex, LoggingEventType.EXECUTE_INTERACTIVE_ERROR, profiles);
+        }
     }
 
-    private Response execImpl(SingleExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start) throws Exception
+    private Response execImpl(ExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start) throws Exception
     {
         // Authorizer has not been configured. So we execute the plan with the default push down authorization behavior.
         if (planExecutionAuthorizer == null)
@@ -123,31 +154,23 @@ public class ExecutePlan
         }
 
         // Plan makes use of middle tier connections. So we check for authorization.
-        PlanExecutionAuthorizerOutput authorizationResult = this.authorizePlan(profiles, execPlan);
+        PlanExecutionAuthorizerOutput authorizationResult = this.authorizePlan(profiles, (SingleExecutionPlan)execPlan);
 
         // Plan failed authorization.
         if (!authorizationResult.isAuthorized())
         {
-            MetricsHandler.observeError("execute");
             LOGGER.info(new LogInfo(profiles, LoggingEventType.MIDDLETIER_INTERACTIVE_EXECUTION, "Plan failed middle tier authorization").toString());
             Response response = ExceptionTool.exceptionManager(authorizationResult.toJSON(), 403, LoggingEventType.MIDDLETIER_INTERACTIVE_EXECUTION, profiles);
-            MetricsHandler.incrementErrorCount("pure/v1/execution/execute", response.getStatus());
             return response;
         }
 
         // Plan passed authorization. Now we can execute it
-        return this.executeAsMiddleTierPlan(planExecutor, execPlan, profiles, format, start);
+        return this.executeAsMiddleTierPlan(planExecutor, (SingleExecutionPlan)execPlan, profiles, format, start);
     }
 
-    private Response executeAsPushDownPlan(PlanExecutor planExecutor, SingleExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start) throws Exception
+    private Response executeAsPushDownPlan(PlanExecutor planExecutor, ExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start)
     {
-        // Assume that the input exec plan has no variables
-        PlanExecutor.ExecuteArgs executeArgs = PlanExecutor.withArgs()
-                .withPlan(execPlan)
-                .withProfiles(profiles)
-                .build();
-
-        Result result = planExecutor.execute(executeArgs);
+        Result result = planExecutor.execute((SingleExecutionPlan)execPlan, Maps.mutable.empty(), null, profiles);
         return this.wrapInResponse(profiles, format, start, result);
     }
 
@@ -172,14 +195,12 @@ public class ExecutePlan
         return executionAuthorization;
     }
 
-    private Response executeAsMiddleTierPlan(PlanExecutor planExecutor, SingleExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start) throws Exception
+    private Response executeAsMiddleTierPlan(PlanExecutor planExecutor, SingleExecutionPlan execPlan, MutableList<CommonProfile> profiles, SerializationFormat format, long start)
     {
-        String generatedMAC = new PlanExecutionAuthorizerMACUtils().generateMAC("Plan execution authorization completed", this.middleTierAuthorizationMACKeyVaultReference);
         StoreExecutionState.RuntimeContext runtimeContext = StoreExecutionState.newRuntimeContext(
                 Maps.immutable.with(
                         PlanExecutionAuthorizerInput.USAGE_CONTEXT_PARAM, INTERACTIVE_EXECUTION.name(),
-                        PlanExecutionAuthorizerInput.RESOURCE_CONTEXT_PARAM, "reserved-for-future-use",
-                        PlanExecutionAuthorizerInput.MAC_CONTEXT_PARAM, generatedMAC
+                        PlanExecutionAuthorizerInput.RESOURCE_CONTEXT_PARAM, "reserved-for-future-use"
                 )
         );
 
@@ -192,14 +213,13 @@ public class ExecutePlan
         String logMessage = String.format("Middle tier interactive execution invoked with custom runtime context. Context=%s", runtimeContext.getContextParams());
         LOGGER.info(new LogInfo(profiles, LoggingEventType.MIDDLETIER_INTERACTIVE_EXECUTION, logMessage).toString());
 
-        Result result = planExecutor.execute(executeArgs);
+        Result result = planExecutor.executeWithArgs(executeArgs);
         return this.wrapInResponse(profiles, format, start, result);
     }
 
     private Response wrapInResponse(MutableList<CommonProfile> pm, SerializationFormat format, long start, Result result)
     {
         LOGGER.info(new LogInfo(pm, LoggingEventType.EXECUTE_INTERACTIVE_STOP, (double) System.currentTimeMillis() - start).toString());
-        MetricsHandler.observe("execute", start, System.currentTimeMillis());
         try (Scope scope = GlobalTracer.get().buildSpan("Manage Results").startActive(true))
         {
             return manageResult(pm, result, format, LoggingEventType.EXECUTE_INTERACTIVE_ERROR);

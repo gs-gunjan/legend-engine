@@ -62,6 +62,7 @@ public class ResultManager
             ErrorResult errorResult = (ErrorResult) result;
             String message = errorResult.getMessage();
             LOGGER.info(new LogInfo(pm, loggingEventType, message).toString());
+            // Not sure about the history behind the 20 error code. We are keep it as is for backwards compatibility
             int errorMessageCode = !propagateErrorCode ? 20 : errorResult.getCode();
             return Response.status(500).type(MediaType.APPLICATION_JSON_TYPE).entity(new ErrorMessage(errorMessageCode, "{\"message\":\"" + new String(jsonStringEncoder.quoteAsString(message)) + "\"}")).build();
         }

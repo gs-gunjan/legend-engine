@@ -21,7 +21,6 @@ import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.map.sorted.MutableSortedMap;
 import org.finos.legend.engine.authentication.DatabaseAuthenticationFlow;
 import org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerInput;
-import org.finos.legend.engine.plan.execution.authorization.mac.PlanExecutionAuthorizerMACUtils;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.authentication.MiddleTierUserNamePasswordAuthenticationStrategy;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.specification.StaticDatasourceSpecification;
 import org.finos.legend.engine.shared.core.identity.Credential;
@@ -40,12 +39,6 @@ import static org.finos.legend.engine.plan.execution.authorization.PlanExecution
 public abstract class AbstractMiddleTierUserNamePasswordAuthenticationFlow implements DatabaseAuthenticationFlow<StaticDatasourceSpecification, MiddleTierUserNamePasswordAuthenticationStrategy>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMiddleTierUserNamePasswordAuthenticationFlow.class);
-    private String macKeyVaultReference;
-
-    public AbstractMiddleTierUserNamePasswordAuthenticationFlow(String macKeyVaultReference)
-    {
-        this.macKeyVaultReference = macKeyVaultReference;
-    }
 
     @Override
     public Class<StaticDatasourceSpecification> getDatasourceClass()
@@ -73,7 +66,8 @@ public abstract class AbstractMiddleTierUserNamePasswordAuthenticationFlow imple
 
         this.parseUsageContext(credentialAcquisitionContext);
         this.parseResourceContext(credentialAcquisitionContext);
-        this.verifyMAC(this.parseMACContext(credentialAcquisitionContext));
+        // TODO - remove
+        this.verifyMAC(null);
 
         MiddleTierUserPasswordCredential credentialFromVault = this.getCredentialFromVault(authenticationStrategy.vaultReference);
         return credentialFromVault;
@@ -81,18 +75,6 @@ public abstract class AbstractMiddleTierUserNamePasswordAuthenticationFlow imple
 
     private void verifyMAC(String mac) throws Exception
     {
-        PlanExecutionAuthorizerMACUtils.MACValidationResult result = new PlanExecutionAuthorizerMACUtils().isValidMAC("Plan execution authorization completed", mac, this.macKeyVaultReference);
-        if (!result.isValidMAC())
-        {
-            String logMessage = String.format("Credential acquisition failed MAC validation. Calling code path is either not trusted or incorrectly configured. MAC Validation Result = %s", result);
-            LOGGER.error(new LogInfo(Lists.mutable.empty(), LoggingEventType.MIDDLETIER_AUTHORIZATION_MAC_VERIFICATION_ERROR, logMessage).toString());
-            throw new RuntimeException(logMessage);
-        }
-        else
-        {
-            String logMessage = String.format("Credential acquisition passed MAC validation. MAC Validation Result = %s", result);
-            LOGGER.info(new LogInfo(Lists.mutable.empty(), LoggingEventType.MIDDLETIER_AUTHORIZATION_MAC_VERIFICATION, logMessage).toString());
-        }
     }
 
     private PlanExecutionAuthorizerInput.ExecutionMode parseUsageContext(RuntimeContext credentialAcquisitionContext)

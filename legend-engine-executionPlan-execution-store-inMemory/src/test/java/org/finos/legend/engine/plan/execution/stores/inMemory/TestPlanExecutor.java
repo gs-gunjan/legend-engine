@@ -164,7 +164,7 @@ public class TestPlanExecutor
                         .castToMap())
                 .build();
 
-        planExecutor.execute(request1ExecuteArgs);
+        planExecutor.executeWithArgs(request1ExecuteArgs);
 
         StoreExecutionState.RuntimeContext request1InjectedRelationalContext = nodeExecutorRecorder.executionState.getStoreExecutionState(StoreType.Relational).getRuntimeContext();
         assertEquals(1, request1InjectedRelationalContext.getContextParams().size());
@@ -180,7 +180,7 @@ public class TestPlanExecutor
                         .castToMap())
                 .build();
 
-        planExecutor.execute(request2ExecuteArgs);
+        planExecutor.executeWithArgs(request2ExecuteArgs);
 
         StoreExecutionState.RuntimeContext request2InjectedRelationalContext = nodeExecutorRecorder.executionState.getStoreExecutionState(StoreType.Relational).getRuntimeContext();
         assertEquals(1, request2InjectedRelationalContext.getContextParams().size());

@@ -38,4 +38,3 @@ SERVICE_ACCOUNT_EMAIL:                                      'serviceAccountEmail
 ADDITIONAL_GCP_SCOPES:                                                  'additionalGcpScopes';
 BRACKET_OPEN:                                               '[';
 BRACKET_CLOSE:                                              ']';
-

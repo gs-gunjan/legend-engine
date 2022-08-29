@@ -22,11 +22,6 @@ public class MemSqlStaticWithMiddletierUserNamePasswordAuthenticationFlow extend
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemSqlStaticWithMiddletierUserNamePasswordAuthenticationFlow.class);
 
-    public MemSqlStaticWithMiddletierUserNamePasswordAuthenticationFlow(String macKeyReference)
-    {
-        super(macKeyReference);
-    }
-
     @Override
     public DatabaseType getDatabaseType()
     {

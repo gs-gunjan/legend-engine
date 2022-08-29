@@ -17,8 +17,6 @@ package org.finos.legend.engine.plan.execution.stores.relational.connection.post
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.junit.Assume.assumeTrue;
-
 public class PostgresTestContainerWrapper
 {
     public PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer(DockerImageName.parse("postgres").withTag("9.6.12"));
@@ -31,14 +29,7 @@ public class PostgresTestContainerWrapper
 
     public void start()
     {
-        try
-        {
-            this.postgreSQLContainer.start();
-        }
-        catch (Throwable ex)
-        {
-            assumeTrue("Cannot start PostgreSQLContainer", false);
-        }
+        this.postgreSQLContainer.start();
     }
 
     public void stop()
@@ -66,10 +57,4 @@ public class PostgresTestContainerWrapper
         return this.postgreSQLContainer.getJdbcUrl();
     }
 
-    public static void main(String[] args)
-    {
-        PostgresTestContainerWrapper build = PostgresTestContainerWrapper.build();
-        build.postgreSQLContainer.start();
-        System.out.println(build.postgreSQLContainer.getJdbcUrl());
-    }
 }

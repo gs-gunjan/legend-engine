@@ -98,236 +98,151 @@ public class PlanExecutor
     @Deprecated
     public Result execute(String executionPlan)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .build()
-        );
+        return execute(executionPlan, (InputStream) null);
     }
 
     @Deprecated
     public Result execute(String executionPlan, String input)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .withInputAsString(input)
-                        .build()
-        );
+        return execute(executionPlan, input, Collections.emptyMap());
     }
 
     @Deprecated
     public Result execute(String executionPlan, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(executionPlan, (InputStream) null, params);
     }
 
     @Deprecated
     public Result execute(String executionPlan, String input, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .withInputAsString(input)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(executionPlan, (input == null) ? null : new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), params);
     }
 
     @Deprecated
     public Result execute(String executionPlan, InputStream input)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .withInputAsStream(input)
-                        .build()
-        );
+        return execute(executionPlan, input, Collections.emptyMap());
     }
 
     @Deprecated
     public Result execute(String executionPlan, InputStream inputStream, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlanAsString(executionPlan)
-                        .withInputAsStream(inputStream)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(readExecutionPlan(executionPlan), inputStream, params);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .build()
-        );
+        return execute(executionPlan, (InputStream) null);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, String input)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withInputAsString(input)
-                        .build()
-        );
+        return execute(executionPlan, input, Collections.emptyMap());
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(executionPlan, (InputStream) null, params);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, InputStream inputStream)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withInputAsStream(inputStream)
-                        .build()
-        );
+        return execute(executionPlan, inputStream, Collections.emptyMap());
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, String input, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withInputAsString(input)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(executionPlan, (input == null) ? null : new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), params);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, InputStream inputStream, Map<String, ?> params)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withInputAsStream(inputStream)
-                        .withParams(params)
-                        .build()
-        );
+        return execute(executionPlan, params, (inputStream == null) ? null : new InputStreamProvider(inputStream));
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, Map<String, ?> params, StreamProvider inputStreamProvider)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParams(params)
-                        .withInputAsStreamProvider(inputStreamProvider)
-                        .build()
-        );
+        return execute(executionPlan, params, inputStreamProvider, null);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, Map<String, ?> params, String user, MutableList<CommonProfile> profiles, PlanExecutionContext planExecutionContext)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParams(params)
-                        .withUser(user)
-                        .withProfiles(profiles)
-                        .withPlanExecutionContext(planExecutionContext)
-                        .build()
-        );
+        Map<String, Result> vars = Maps.mutable.ofInitialCapacity(params.size());
+        params.forEach((key, value) -> vars.put(key, new ConstantResult(value)));
+        return execute(executionPlan.getSingleExecutionPlan(params), vars, user, profiles, planExecutionContext);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, Map<String, ?> params, StreamProvider inputStreamProvider, PlanExecutionContext planExecutionContext)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParams(params)
-                        .withInputAsStreamProvider(inputStreamProvider)
-                        .withPlanExecutionContext(planExecutionContext)
-                        .build()
-        );
-    }
-
-    @Deprecated
-    public Result execute(SingleExecutionPlan executionPlan, Map<String, Result> vars, String user, MutableList<CommonProfile> profiles)
-    {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParamsAsResults(vars)
-                        .withUser(user)
-                        .withProfiles(profiles)
-                        .build()
-        );
-    }
-
-    @Deprecated
-    public Result execute(SingleExecutionPlan executionPlan, Map<String, Result> vars, String user, MutableList<CommonProfile> profiles, PlanExecutionContext planExecutionContext)
-    {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParamsAsResults(vars)
-                        .withUser(user)
-                        .withProfiles(profiles)
-                        .withPlanExecutionContext(planExecutionContext)
-                        .build()
-        );
+        return execute(executionPlan, params, inputStreamProvider, null, planExecutionContext);
     }
 
     @Deprecated
     public Result execute(ExecutionPlan executionPlan, Map<String, ?> params, StreamProvider inputStreamProvider, MutableList<CommonProfile> profiles, PlanExecutionContext planExecutionContext)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(executionPlan)
-                        .withParams(params)
-                        .withInputAsStreamProvider(inputStreamProvider)
-                        .withProfiles(profiles)
-                        .withPlanExecutionContext(planExecutionContext)
-                        .build()
-        );
+        SingleExecutionPlan singleExecutionPlan = executionPlan.getSingleExecutionPlan(params);
+        try
+        {
+            if (inputStreamProvider != null)
+            {
+                StreamProviderHolder.streamProviderThreadLocal.set(inputStreamProvider);
+            }
+            Map<String, Result> vars = Maps.mutable.ofInitialCapacity(params.size());
+            params.forEach((key, value) -> vars.put(key, new ConstantResult(value)));
+            return execute(singleExecutionPlan, vars, (String) null, profiles, planExecutionContext);
+        }
+        finally
+        {
+            StreamProviderHolder.streamProviderThreadLocal.remove();
+        }
     }
 
-    @Deprecated
+    public Result execute(SingleExecutionPlan executionPlan, Map<String, Result> vars, String user, MutableList<CommonProfile> profiles)
+    {
+        return execute(executionPlan, buildDefaultExecutionState(executionPlan, vars), user, profiles);
+    }
+
+    public Result execute(SingleExecutionPlan executionPlan, Map<String, Result> vars, String user, MutableList<CommonProfile> profiles, PlanExecutionContext planExecutionContext)
+    {
+        return execute(executionPlan, buildDefaultExecutionState(executionPlan, vars, planExecutionContext), user, profiles);
+    }
+
     public Result execute(SingleExecutionPlan singleExecutionPlan, ExecutionState state, String user, MutableList<CommonProfile> profiles)
     {
-        return this.executeImpl(
-                ExecuteArgs.newArgs()
-                        .withPlan(singleExecutionPlan)
-                        .withState(state)
-                        .withUser(user)
-                        .withProfiles(profiles)
-                        .build()
-        );
+        EngineJavaCompiler engineJavaCompiler = possiblyCompilePlan(singleExecutionPlan, state, profiles);
+        try (JavaHelper.ThreadContextClassLoaderScope scope = (engineJavaCompiler == null) ? null : JavaHelper.withCurrentThreadContextClassLoader(engineJavaCompiler.getClassLoader()))
+        {
+            // set up the state
+            if (singleExecutionPlan.authDependent)
+            {
+                state.setAuthUser((singleExecutionPlan.kerberos == null) ? user : singleExecutionPlan.kerberos);
+            }
+            if (state.authId == null)
+            {
+                state.setAuthUser(IdentityFactoryProvider.getInstance().makeIdentity(profiles).getName(), false);
+            }
+            if (singleExecutionPlan.authDependent && (state.getResult(USER_ID) == null))
+            {
+                state.addResult(USER_ID, new ConstantResult(state.authId));
+            }
+            singleExecutionPlan.getExecutionStateParams(org.eclipse.collections.api.factory.Maps.mutable.empty()).forEach(state::addParameterValue);
+
+            // execute
+            return singleExecutionPlan.rootExecutionNode.accept(new ExecutionNodeExecutor(profiles, state));
+        }
     }
 
-    public Result execute(ExecuteArgs executeArgs)
-    {
-        return this.executeImpl(executeArgs);
-    }
-
-    private Result executeImpl(ExecuteArgs executeArgs)
+    public Result executeWithArgs(ExecuteArgs executeArgs)
     {
         SingleExecutionPlan singleExecutionPlan = executeArgs.executionPlan.getSingleExecutionPlan(executeArgs.params);
         try

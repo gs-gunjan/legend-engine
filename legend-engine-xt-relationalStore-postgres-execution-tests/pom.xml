@@ -19,16 +19,13 @@
     <parent>
         <groupId>org.finos.legend.engine</groupId>
         <artifactId>legend-engine</artifactId>
-        <version>3.9.4-SNAPSHOT</version>
+        <version>3.14.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>legend-engine-xt-relationalStore-postgres-execution-tests</artifactId>
     <packaging>jar</packaging>
     <name>Legend Engine - XT - Relational Store - Postgres - Execution - Tests</name>
-
-    <build>
-    </build>
 
     <dependencies>
         <dependency>
@@ -40,12 +37,23 @@
             <artifactId>postgresql</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
