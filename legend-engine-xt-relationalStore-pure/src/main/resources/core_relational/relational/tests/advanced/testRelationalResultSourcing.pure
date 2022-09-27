@@ -22,13 +22,11 @@ import meta::pure::executionPlan::toString::*;
 function meta::relational::tests::advanced::resultSourcing::getConnection():Connection[1]
 {
    let connection = meta::relational::tests::testRuntime().connectionByElement(meta::relational::tests::db)->cast(@TestDatabaseConnection);
-   meta::relational::tests::createPersonTableAndFillDb($connection);
-   meta::relational::tests::createFirmTableAndFillDb($connection);
-   meta::relational::tests::createTradeTableAndFillDb($connection);
+   meta::relational::tests::createTablesAndFillDb();
    $connection;
  }
 
-function <<meta::pure::profiles::test.Test, meta::pure::profiles::test.AlloyOnly>> {serverVersion.start='v1_19_0'} meta::relational::tests::advanced::resultSourcing::relationalResultSourcingOfList():Boolean[1]
+function <<meta::pure::profiles::test.Test>> meta::relational::tests::advanced::resultSourcing::relationalResultSourcingOfList():Boolean[1]
 {
    let result = meta::pure::router::execute({|
       let nameList = meta::relational::tests::model::simple::Firm.all()->filter(x|$x.isFirmXGroup()).legalName->distinct();
@@ -42,7 +40,19 @@ function <<meta::pure::profiles::test.Test, meta::pure::profiles::test.AlloyOnly
    assertSameElements($expectedValue, $result.values->toCSV());
 }
 
-function <<meta::pure::profiles::test.Test, meta::pure::profiles::test.AlloyOnly>> {serverVersion.start='v1_19_0'} meta::relational::tests::advanced::resultSourcing::relationalResultSourcingOfListExecutionPlan():Boolean[1]
+function <<meta::pure::profiles::test.Test>> meta::relational::tests::advanced::resultSourcing::relationalResultSourcingOfDateList():Boolean[1]
+{
+   let result = meta::pure::router::execute({|
+      let dateList = meta::relational::tests::model::simple::Trade.all()->filter(x|$x.latestEventDate->isNotEmpty()).latestEventDate->distinct()->take(2);
+      meta::relational::tests::model::simple::Trade.all()->filter(y|$y.latestEventDate->in($dateList))->project([col(y|$y.id,'id')])->sort(['id']);
+   }, meta::relational::tests::simpleRelationalMapping, ^Runtime(connections = [meta::relational::tests::advanced::resultSourcing::getConnection()]), meta::relational::extension::relationalExtensions());
+   let expectedValue = 'id\n'+
+                        '1\n'+
+                        '6\n';
+   assertSameElements($expectedValue,$result.values->toCSV());
+}
+
+function <<meta::pure::profiles::test.Test>> meta::relational::tests::advanced::resultSourcing::relationalResultSourcingOfListExecutionPlan():Boolean[1]
 {
    let result = meta::pure::executionPlan::executionPlan({|
       let nameList = meta::relational::tests::model::simple::Firm.all()->filter(x|$x.isFirmXGroup()).legalName->distinct();
