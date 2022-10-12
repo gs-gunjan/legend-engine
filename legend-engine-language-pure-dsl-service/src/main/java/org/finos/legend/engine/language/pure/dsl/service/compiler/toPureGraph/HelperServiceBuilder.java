@@ -102,10 +102,19 @@ public class HelperServiceBuilder
         if (execution instanceof PureSingleExecution)
         {
             PureSingleExecution pureSingleExecution = (PureSingleExecution) execution;
-            Mapping mapping = context.resolveMapping(pureSingleExecution.mapping, pureSingleExecution.mappingSourceInformation);
-            inferEmbeddedRuntimeMapping(pureSingleExecution.runtime, pureSingleExecution.mapping);
-            org.finos.legend.pure.m3.coreinstance.meta.pure.runtime.Runtime runtime = HelperRuntimeBuilder.buildPureRuntime(pureSingleExecution.runtime, context);
-            HelperRuntimeBuilder.checkRuntimeMappingCoverage(runtime, Lists.fixedSize.of(mapping), context, pureSingleExecution.runtime.sourceInformation);
+            Mapping mapping = null;
+            org.finos.legend.pure.m3.coreinstance.meta.pure.runtime.Runtime runtime = null;
+            if (pureSingleExecution.mapping != null && pureSingleExecution.runtime != null)
+            {
+                mapping = context.resolveMapping(pureSingleExecution.mapping, pureSingleExecution.mappingSourceInformation);
+                inferEmbeddedRuntimeMapping(pureSingleExecution.runtime, pureSingleExecution.mapping);
+                runtime = HelperRuntimeBuilder.buildPureRuntime(pureSingleExecution.runtime, context);
+                HelperRuntimeBuilder.checkRuntimeMappingCoverage(runtime, Lists.fixedSize.of(mapping), context, pureSingleExecution.runtime.sourceInformation);
+            }
+            else
+            {
+                HelperValueSpecificationBuilder.validateFunctionPresentInLambda("from", "to specify mapping and runtime", pureSingleExecution.func, context);
+            }
             return new Root_meta_legend_service_metamodel_PureSingleExecution_Impl("", null, context.pureModel.getClass("meta::legend::service::metamodel::PureSingleExecution"))
                     ._func(HelperValueSpecificationBuilder.buildLambda(pureSingleExecution.func, context))
                     ._mapping(mapping)

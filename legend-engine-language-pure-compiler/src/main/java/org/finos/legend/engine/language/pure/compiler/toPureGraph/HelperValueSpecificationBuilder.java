@@ -21,6 +21,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.utility.ListIterate;
 import org.finos.legend.engine.protocol.pure.v1.model.SourceInformation;
+import org.finos.legend.engine.protocol.pure.v1.model.context.EngineErrorType;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.domain.Multiplicity;
 import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.ValueSpecification;
 import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.Variable;
@@ -35,6 +36,7 @@ import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.raw.exe
 import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.raw.executionContext.ExecutionContext;
 import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.raw.graph.PropertyGraphFetchTree;
 import org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.raw.graph.RootGraphFetchTree;
+import org.finos.legend.engine.shared.core.operational.errorManagement.EngineException;
 import org.finos.legend.pure.generated.Root_meta_pure_graphFetch_PropertyGraphFetchTree_Impl;
 import org.finos.legend.pure.generated.Root_meta_pure_graphFetch_RootGraphFetchTree_Impl;
 import org.finos.legend.pure.generated.Root_meta_pure_metamodel_function_LambdaFunction_Impl;
@@ -246,6 +248,15 @@ public class HelperValueSpecificationBuilder
         }
         processingContext.pop();
         return result;
+    }
+
+    public static void validateFunctionPresentInLambda(String function, String additionalErrorMessage, Lambda lambda, CompileContext context)
+    {
+        Optional<ValueSpecification> expressionWithFunction = lambda.body.stream().filter(x -> x instanceof AppliedFunction && ((AppliedFunction) x).function.equals(function)).findFirst();
+        if (!expressionWithFunction.isPresent())
+        {
+            throw new EngineException("function: '" + function + "' needs to be present as part of the lambda, " + additionalErrorMessage, lambda.sourceInformation, EngineErrorType.COMPILATION);
+        }
     }
 
     private static AbstractProperty<?> findProperty(CompileContext context, org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Class<?> aClass, List<org.finos.legend.engine.protocol.pure.v1.model.valueSpecification.ValueSpecification> parameters, String name, SourceInformation sourceInformation)
