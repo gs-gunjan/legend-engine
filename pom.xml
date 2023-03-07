@@ -26,7 +26,7 @@
     <name>Legend Engine</name>
     <groupId>org.finos.legend.engine</groupId>
     <artifactId>legend-engine</artifactId>
-    <version>4.2.1-SNAPSHOT</version>
+    <version>4.3.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -85,7 +85,6 @@
         <module>legend-engine-xt-flatdata-model</module>
         <module>legend-engine-xt-flatdata-shared</module>
         <module>legend-engine-xt-flatdata-runtime</module>
-        <module>legend-engine-xt-flatdata-protocol</module>
         <module>legend-engine-xt-flatdata-pure</module>
 
         <module>legend-engine-xt-json-model</module>
@@ -251,11 +250,15 @@
         <module>legend-engine-xt-sql-pure</module>
         <module>legend-engine-xt-sql-postgres-server</module>
         <module>legend-engine-xt-elasticsearch</module>
+        <module>legend-engine-xt-nonrelationalStore-mongodb-pure</module>
+        <module>legend-engine-xt-nonrelationalStore-mongodb-grammar</module>
+        <module>legend-engine-xt-nonrelationalStore-mongodb-protocol</module>
+        <module>legend-engine-xt-nonrelationalStore-mongodb-grammar-integration</module>
     </modules>
 
     <properties>
         <!-- Legend -->
-        <legend.pure.version>4.2.1</legend.pure.version>
+        <legend.pure.version>4.3.1</legend.pure.version>
         <legend.shared.version>0.22.5</legend.shared.version>
 
         <!-- SONAR -->
@@ -1046,11 +1049,6 @@
 
             <dependency>
                 <groupId>org.finos.legend.engine</groupId>
-                <artifactId>legend-engine-xt-flatdata-protocol</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.finos.legend.engine</groupId>
                 <artifactId>legend-engine-xt-flatdata-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1710,6 +1708,26 @@
             <dependency>
                 <groupId>org.finos.legend.engine</groupId>
                 <artifactId>legend-engine-xt-sql-postgres-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.finos.legend.engine</groupId>
+                <artifactId>legend-engine-xt-nonrelationalStore-mongodb-pure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.finos.legend.engine</groupId>
+                <artifactId>legend-engine-xt-nonrelationalStore-mongodb-grammar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.finos.legend.engine</groupId>
+                <artifactId>legend-engine-xt-nonrelationalStore-mongodb-grammar-integration</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.finos.legend.engine</groupId>
+                <artifactId>legend-engine-xt-nonrelationalStore-mongodb-protocol</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- ENGINE -->
