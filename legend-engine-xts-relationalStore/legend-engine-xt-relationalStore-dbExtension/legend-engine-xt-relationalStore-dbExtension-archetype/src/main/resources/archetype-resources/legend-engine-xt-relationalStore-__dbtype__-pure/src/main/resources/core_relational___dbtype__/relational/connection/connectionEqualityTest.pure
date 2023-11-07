@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import meta::relational::metamodel::execute::tests::*;
-import meta::pure::alloy::connections::*;
+import meta::external::store::relational::runtime::*;
 import meta::pure::runtime::*;
 import meta::relational::translation::*;
 import meta::pure::extension::*;
@@ -28,14 +28,14 @@ import meta::pure::mapping::*;
 function <<test.Test>> meta::relational::tests::connEquality::testConnectionEqualityAllSame__dbtype__() : Boolean[1]
 {
   let c1 = ^RelationalDatabaseConnection(
-    element = 'Store1',
+
     type = DatabaseType.__dbtype__,
     datasourceSpecification = ^meta::pure::alloy::connections::alloy::specification::__dbtype__DatasourceSpecification(),
     authenticationStrategy = ^meta::pure::alloy::connections::alloy::authentication::ApiTokenAuthenticationStrategy(apiToken='token')
   );
 
   let c2 = ^RelationalDatabaseConnection(
-    element = '',
+
     type = DatabaseType.Snowflake,
     datasourceSpecification = ^meta::pure::alloy::connections::alloy::specification::BigQueryDatasourceSpecification(projectId='project', defaultDataset='defDs', proxyHost='ph', proxyPort='8080'),
     authenticationStrategy = ^meta::pure::alloy::connections::alloy::authentication::ApiTokenAuthenticationStrategy(apiToken='token')
